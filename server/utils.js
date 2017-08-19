@@ -21,6 +21,12 @@ module.exports.getLocationsAndSend = (coordinates1, coordinates2, arrivalTime, t
       console.log('points along', pointsAlong);
       yelp.yelpRequest(midpoint, 10, 100)
         .then((yelpLocations) => {
+
+          console.log('GETTING POINTSshould emit');
+
+          io.sockets.emit('match status', {
+            statusMessage: 'Location Found',
+          });
           io.sockets.emit('midpoint', { lat: midpoint.latitude, lng: midpoint.longitude });
           io.sockets.emit('mid meeting locations', yelpLocations)
           // formatted as { location1: [lat,lng], location2: [lat, lng] }
@@ -44,7 +50,7 @@ module.exports.getLocationsAndSend = (coordinates1, coordinates2, arrivalTime, t
           const allMeetingLocations = [].concat.apply([], locationsArr);
           io.sockets.emit('all meeting locations', allMeetingLocations );
         })
-        .catch(err => console.log("Error with promise all"), err);
+        .catch(err => { console.log("Error with promise all"), err });
     })
     .catch(err => console.log(err));
 }
