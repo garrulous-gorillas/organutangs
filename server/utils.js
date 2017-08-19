@@ -18,6 +18,12 @@ module.exports.getLocationsAndSend = (coordinates1, coordinates2, arrivalTime, t
   gmaps.generatePointsAlong(coordinates1, coordinates2, arrivalTime, transportation)
     .then(({ pointsAlong, midpoint, departure_time }) => {
       // Generate midpoint locations with higher search radius
+      
+      /** send out the departure_time */
+      io.sockets.emit('departure_time', {
+        departure_time: departure_time
+      });
+
       console.log('points along', pointsAlong);
       yelp.yelpRequest(midpoint, 10, 100)
         .then((yelpLocations) => {

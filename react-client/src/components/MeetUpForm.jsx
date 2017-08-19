@@ -33,7 +33,7 @@ class MeetUpForm extends React.Component {
     this.handleSubmitTime = (minutes) => {
       //console.log(this.state.meetUpTime);
       this.setState({ meetUpTime: this.state.meetUpTime.add(minutes, 'minutes') });
-      this.setState({ leaveBy: this.state.leaveBy.add(minutes, 'minutes') });
+      //this.setState({ leaveBy: this.state.leaveBy.add(minutes, 'minutes') });
     };
   }
 
