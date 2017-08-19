@@ -200,7 +200,8 @@ class App extends React.Component {
                       handleAllLocationsToggle = {this.handleAllLocationsToggle.bind(this) }
                       resetMidpoint = { this.resetMidpoint }
                       handleTransportationChange={ this.handleTransportationChange }
-                      transportation={ this.state.transportation }/>
+                      transportation={ this.state.transportation }
+                      departure_time={ this.state.departure_time }/>
 
           <div className="resultsContainer">
             <div className= "mapBox" >
@@ -219,8 +220,8 @@ class App extends React.Component {
               </div>
             </div>
             <div className="listContainer">
-              <List 
-                handleClick={this.handleListClick.bind(this)} 
+              <List
+                handleClick={this.handleListClick.bind(this)}
                 items={ this.toggleLocations()  }
                 favoriteLocations={ this.state.favoriteLocations }
                 handleFavoriteClick={this.handleFavoriteClick}
