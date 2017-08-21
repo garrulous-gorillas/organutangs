@@ -10,7 +10,11 @@ var UserSchema = mongoose.Schema({
   },
   password: {
     type: String
-  }
+  },
+  savedLocations: {
+    type: Object,
+    default: {'test': 'text'}
+  },
 });
 
 var User = module.exports = mongoose.model('User', UserSchema);
@@ -41,3 +45,26 @@ module.exports.comparePassword = function(candidatePassword, hash, callback){
       callback(null, isMatch);
   });
 };
+
+module.exports.saveLocation = function(username, newLocation, callback){
+  var query = { username: username };
+  var id = newLocation.id;
+  var path = `savedLocations.${id}`;
+  var update = {};
+  update[path] = newLocation;
+  var newLocation = { "$set": update };
+  // console.log('new location obj', newLocation);
+  User.findOneAndUpdate(query, newLocation, callback);
+}
+
+module.exports.removeSavedLocation = function(username, location, callback){
+  var query = { username: username };
+  var id = location;
+  var path = `savedLocations.${id}`;
+  var update = {};
+  update[path] = "";
+  console.log('update obj', update);
+  var removedLocation = { "$unset": update };
+  // console.log('new location obj', newLocation);
+  User.findOneAndUpdate(query, removedLocation, callback);
+}

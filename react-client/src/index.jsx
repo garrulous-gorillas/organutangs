@@ -21,16 +21,23 @@ class App extends React.Component {
       auth: !!localStorage.getItem('username') || false,
       userId: localStorage.getItem('username') || '',
       // meetingLocations: [],
+      transportation: 'walking',
       meetingLocations: sampleData.sampleData,
       allMeetingLocations: sampleData.sampleData,
       displayAllLocations: false,
       midpoint: { "lat": 40.751094, "lng": -73.987597 },
       center: { "lat": 40.751094, "lng": -73.987597 },
-      departure_time: undefined
+      departure_time: undefined,
+      routePath: [],
+      favoriteLocations: {}
     };
 
     this.showSignUp = false;
 
+    this.handleFavoriteClick = this.handleFavoriteClick.bind(this);
+    this.handleTransportationChange = this.handleTransportationChange.bind(this);
+    this.toggleLocations = this.toggleLocations.bind(this);
+    this.handleMapMounted = this.handleMapMounted.bind(this);
     this.setAuth = this.setAuth.bind(this);
     this.setuserId = this.setuserId.bind(this);
     // this.handleClick = this.handleClick.bind(this);
@@ -39,8 +46,6 @@ class App extends React.Component {
 
   setuserId(input) {
     this.setState({userId: input}, () => {
-      console.log('[index] setUser', this.state.userId);
-
       if (this.state.userId === null) {
         socket.emit('remove user', this.state.userId);
       } else {
@@ -63,28 +68,95 @@ class App extends React.Component {
     this.setState({center: {"lat": item.coordinates.latitude, "lng": item.coordinates.longitude} });
   }
 
+  handleFavoriteClick(item, favoriteStatus) {
+
+    console.log("favorite clicked");
+    console.log('status', favoriteStatus);
+    if (!favoriteStatus) {
+      const newFavorites = Object.assign(this.state.favoriteLocations, {[item.id]: item});
+      this.setState({favoriteLocations: newFavorites});
+      axios.put(`/favorites/${this.state.userId}`, {
+        newLocation: item
+      })
+        .catch(err => console.log(err));
+    } else {
+      console.log(item.id);
+      const newFavorites = Object.assign({}, this.state.favoriteLocations);
+      delete newFavorites[item.id];
+      this.setState({favoriteLocations: newFavorites});
+      axios.put(`/favorites/delete/${this.state.userId}`, {
+        location: item.id
+      })
+        .catch(err => console.log(err));
+    }
+  }
+
+  handleMapMounted(map) {
+    // Keep a reference to map object for react-google-maps method
+    this._map = map;
+  }
+
+  handleMapMounted(map) {
+    // Keep a reference to map object for react-google-maps method
+    this._map = map;
+  }
+
+  handleCenterChanged() {
+    console.log('handleCenterChange called');
+    this._map.setCenter({lat: -34, lng: 151});
+  }
+
   handleAllLocationsToggle() {
-    this.setState({displayAllLocations : !this.state.displayAllLocations});
-    console.log('handleAllLocationsToggle clicked');
+    this.setState({displayAllLocations : !this.state.displayAllLocations}, ()=> {
+      var markers = this.toggleLocations().map(function(obj,index){
+        return {
+          lat: obj.coordinates.latitude,
+          lng: obj.coordinates.longitude
+        }
+      });
+
+      var bounds = new google.maps.LatLngBounds();
+      for (var i = 0; i < markers.length; i++) {
+        bounds.extend(markers[i]);
+      }
+      this._map.fitBounds(bounds);
+    });
   }
 
   toggleLocations() {
     return this.state.displayAllLocations ? this.state.allMeetingLocations : this.state.meetingLocations;
   }
 
+  handleTransportationChange(event) {
+    console.log('transportation changed', event.target.name);
+    this.setState( {transportation: event.target.name })
+  }
+
   resetMidpoint() {
     this.setState({ midpoint: null }, function() {
-      console.log('midpot was reset to null');
+      console.log('---midpt was reset---');
     });
   }
 
   componentDidMount() {
+    axios.get(`/favorites/${this.state.userId}`)
+      .then((favoriteLocations) => {
+        console.log('all favorite locations: ', favoriteLocations.data);
+        this.setState( { favoriteLocations: favoriteLocations.data });
+      })
+      .catch(err => console.log(err));
+
     socket.on('mid meeting locations', (data) => {
       this.setState({ meetingLocations: data });
     });
 
     socket.on('all meeting locations', (data) => {
       this.setState({ allMeetingLocations: data });
+    });
+
+    socket.on('routePath', (data) => {
+      this.setState({ routePath: data });
+      console.log('routePath', data);
     });
 
     socket.on('match status', (data) => {
@@ -127,23 +199,33 @@ class App extends React.Component {
                       socket = { socket }
                       handleAllLocationsToggle = {this.handleAllLocationsToggle.bind(this) }
                       resetMidpoint = { this.resetMidpoint }
-                      departure_time = { this.state.departure_time }/>
+                      handleTransportationChange={ this.handleTransportationChange }
+                      transportation={ this.state.transportation }
+                      departure_time={ this.state.departure_time }/>
+
           <div className="resultsContainer">
             <div className= "mapBox" >
               <div className="subMapBox">
                 <Map
                   socket = { socket }
-                  markers={ this.toggleLocations() }
-                  midpoint={ this.state.midpoint }
-                  center={ this.state.center }
+                  markers = { this.toggleLocations() }
+                  midpoint = { this.state.midpoint }
+                  center = { this.state.center }
                   containerElement={<div style={{height:100+'%'}} />}
                   mapElement={<div style={{height:100+'%'}} />}
-                  handleMarkerClick={this.handleMarkerClick.bind(this)}
+                  handleMarkerClick={ this.handleMarkerClick.bind(this) }
+                  onMapMounted = { this.handleMapMounted }
+                  transportation={  this.state.transportation }
                 />
               </div>
             </div>
             <div className="listContainer">
-              <List handleClick={this.handleListClick.bind(this)} items={ this.toggleLocations() }/>
+              <List
+                handleClick={this.handleListClick.bind(this)}
+                items={ this.toggleLocations()  }
+                favoriteLocations={ this.state.favoriteLocations }
+                handleFavoriteClick={this.handleFavoriteClick}
+              />
             </div>
           </div>
         </div>
